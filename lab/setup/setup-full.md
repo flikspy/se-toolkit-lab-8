@@ -77,15 +77,15 @@
 
 ### 1.2. Start creating a VM
 
-> [!NOTE]
-> Skip this step if you can [connect to your VM](../../wiki/vm-access.md#connect-to-the-vm-as-the-user-user-local).
+> [!TIP]
+> Skip this step if you can [connect to your VM as the user `admin`](../../wiki/vm-access.md#connect-to-the-vm-as-the-user-user-local).
 
-[Create a subscription](../../wiki/vm.md#create-a-subscription) to be able to create a VM.
+1. [Create a subscription](../../wiki/vm.md#create-a-subscription) to be able to create a VM.
 
 > [!TIP]
 > Subscription approval may take time.
 > Continue with the next steps while you wait — you will
-> [set up a new VM](#18-set-up-a-new-vm) later.
+> [set up the VM](#112-set-up-the-vm) later.
 
 ### 1.3. Set up your fork (LOCAL)
 
@@ -173,13 +173,15 @@ See [tools](../../wiki/software-types.md#tool).
 
 2. [Open in `VS Code` the directory](../../wiki/vs-code.md#open-the-directory):
    `software-engineering-toolkit`.
-3. (`Windows` only) [Reopen the directory in `WSL`](../../wiki/vs-code.md#windows-only-reopen-the-directory-in-wsl) if you didn't do that before.
+
+3. (`Windows` only) [Reopen the directory in `WSL`](../../wiki/vs-code.md#windows-only-reopen-the-directory-in-wsl).
 
 ### 1.6. Clone your fork (LOCAL)
 
 #### 1.6.1. (UPD) Copy your fork URL
 
-1. [Go to your fork](#133-upd-go-to-your-fork).
+1. [Go to your lab repository fork](#133-upd-go-to-your-fork).
+
 2. Copy [`<your-fork-url>`](../../wiki/github.md#your-fork-url-placeholder).
 
    It should look like `https://github.com/<your-github-username>/se-toolkit-lab-7`.
