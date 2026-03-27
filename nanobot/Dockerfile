@@ -10,11 +10,16 @@ FROM ${REGISTRY_PREFIX_DOCKER_HUB}astral/uv:python3.14-bookworm-slim AS builder
 
 WORKDIR /app
 
-# Copy project files
-COPY pyproject.toml uv.lock ./
-COPY nanobot/ ./nanobot/
+# Copy workspace root (includes mcp/, nanobot-websocket-channel/, pyproject.toml, uv.lock)
+COPY --from=workspace pyproject.toml uv.lock /app/
+COPY --from=workspace mcp/ /app/mcp/
+COPY --from=workspace nanobot-websocket-channel/ /app/nanobot-websocket-channel/
 
-# Sync dependencies (including workspace packages like mcp/)
+# Copy nanobot project files (build context is ./nanobot)
+COPY pyproject.toml uv.lock /app/nanobot/
+COPY . /app/nanobot/
+
+# Sync dependencies
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --package nanobot
 
@@ -29,9 +34,6 @@ RUN groupadd --system --gid 999 nonroot \
 
 # Copy virtual environment from builder
 COPY --from=builder --chown=nonroot:nonroot /app /app
-
-# Copy nanobot project files
-COPY --chown=nonroot:nonroot nanobot/ /app/nanobot/
 
 # Create workspace directory
 RUN mkdir -p /home/nonroot/.nanobot && chown nonroot:nonroot /home/nonroot/.nanobot

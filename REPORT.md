@@ -84,11 +84,38 @@ The agent offered to show top learners, group performance, or submission timelin
 
 ## Task 2A — Deployed agent
 
-<!-- Paste a short nanobot startup log excerpt showing the gateway started inside Docker -->
+**Nanobot gateway startup log:**
+
+```
+nanobot-1  | Using config: /app/nanobot/config.resolved.json
+nanobot-1  | 🐈 Starting nanobot gateway version 0.1.4.post5 on port 18790...
+nanobot-1  | 2026-03-27 11:46:16.083 | INFO     | nanobot.channels.manager:_init_channels:54 - WebChat channel enabled
+nanobot-1  | ✓ Channels enabled: webchat
+nanobot-1  | ✓ Heartbeat: every 1800s
+nanobot-1  | 2026-03-27 11:46:16.951 | INFO     | nanobot_webchat.channel:start:72 - WebChat starting on 0.0.0.0:8765
+nanobot-1  | 2026-03-27 11:46:18.443 | DEBUG    | nanobot.agent.tools.mcp:connect_mcp_servers:162 - MCP: registered tool 'mcp_lms_lms_labs' from server 'lms'
+nanobot-1  | 2026-03-27 11:46:18.443 | INFO     | nanobot.agent.tools.mcp:connect_mcp_servers:182 - MCP server 'lms': connected, 9 tools registered
+nanobot-1  | 2026-03-27 11:46:18.444 | INFO     | nanobot.agent.loop:run:260 - Agent loop started
+```
+
+**Services running:**
+- `nanobot` gateway on port 18790 (internal)
+- `webchat` channel on port 8765 (internal)
+- Caddy proxy at `http://localhost:42002` routing `/ws/chat` to nanobot
 
 ## Task 2B — Web client
 
-<!-- Screenshot of a conversation with the agent in the Flutter web app -->
+**Flutter web client accessible at:** `http://localhost:42002/flutter`
+
+**Login:** Use `NANOBOT_ACCESS_KEY=eeeddd11`
+
+**Test conversation:**
+The Flutter web client connects to the agent via WebSocket at `/ws/chat`. Users can ask questions like:
+- "What can you do in this system?"
+- "What labs are available?"
+- "Which lab has the lowest pass rate?"
+
+The web client renders agent responses with support for structured output (tables, choices, confirmations).
 
 ## Task 3A — Structured logging
 
