@@ -180,10 +180,49 @@ The agent followed the investigation flow:
 
 ## Task 4C — Bug fix and recovery
 
-**Root cause:** The backend's async database connection pool doesn't handle PostgreSQL restarts gracefully. When PostgreSQL stops, existing connections become stale and throw `connection is closed` errors.
+**1. Root cause — Planted bug location:**
 
-**Fix:** The error is in the database connection handling. The async engine needs connection pool recycling or retry logic.
+File: `backend/app/routers/items.py`, function `get_items()`
 
-**Post-fix check:** After restarting PostgreSQL, the agent reports: "System looks healthy. No errors in the last 2 minutes. All requests completing successfully."
+The bug was catching all exceptions and returning HTTP 404 instead of 500:
 
-**Healthy follow-up:** The scheduled health check now reports: "System healthy - 0 errors in the last 2 minutes."
+```python
+# BEFORE (buggy):
+except Exception as exc:
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="Items not found",
+    ) from exc
+```
+
+**2. Fix applied:**
+
+```python
+# AFTER (fixed):
+except Exception as exc:
+    # Re-raise as 500 Internal Server Error for database failures
+    raise HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail="Database error occurred",
+    ) from exc
+```
+
+**3. Post-fix verification:**
+
+With PostgreSQL stopped:
+```bash
+$ curl -s -o /dev/null -w "%{http_code}" http://localhost:42002/items/ -H "Authorization: Bearer apikey"
+500
+```
+
+Before the fix, this returned `404`. After the fix, it correctly returns `500`.
+
+**4. Healthy follow-up:**
+
+After restarting PostgreSQL:
+```bash
+$ curl -sf http://localhost:42002/items/ -H "Authorization: Bearer apikey" | head -c 100
+[{"title":"Lab 01 – Products, Architecture & Roles","id":1,...}]
+```
+
+The scheduled health check now reports: "System healthy - 0 errors in the last 2 minutes."
