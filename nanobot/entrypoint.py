@@ -64,6 +64,14 @@ def resolve_config():
         config["tools"]["mcpServers"]["lms"]["env"]["NANOBOT_LMS_BACKEND_URL"] = lms_backend_url
         config["tools"]["mcpServers"]["lms"]["env"]["NANOBOT_LMS_API_KEY"] = lms_api_key
 
+    # Resolve MCP server env vars (Observability)
+    victorialogs_url = os.environ.get("VICTORIALOGS_URL", "http://victorialogs:9428")
+    victoriatraces_url = os.environ.get("VICTORIATRACES_URL", "http://victoriatraces:10428")
+
+    if "observability" in config["tools"]["mcpServers"]:
+        config["tools"]["mcpServers"]["observability"]["env"]["VICTORIALOGS_URL"] = victorialogs_url
+        config["tools"]["mcpServers"]["observability"]["env"]["VICTORIATRACES_URL"] = victoriatraces_url
+
     # Write resolved config
     with open(resolved_path, "w") as f:
         json.dump(config, f, indent=2)

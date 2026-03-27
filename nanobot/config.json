@@ -289,6 +289,17 @@
           "NANOBOT_LMS_BACKEND_URL": "http://backend:8000",
           "NANOBOT_LMS_API_KEY": ""
         }
+      },
+      "observability": {
+        "command": "python",
+        "args": [
+          "-m",
+          "mcp_observability"
+        ],
+        "env": {
+          "VICTORIALOGS_URL": "http://victorialogs:9428",
+          "VICTORIATRACES_URL": "http://victoriatraces:10428"
+        }
       }
     }
   }

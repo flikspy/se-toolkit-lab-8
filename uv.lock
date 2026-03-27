@@ -1165,7 +1165,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "lms-mcp", editable = "mcp" },
+    { name = "lms-mcp", extras = ["observability"], editable = "mcp" },
     { name = "nanobot-ai", specifier = ">=0.1.4.post5" },
     { name = "nanobot-webchat", editable = "nanobot-websocket-channel" },
 ]

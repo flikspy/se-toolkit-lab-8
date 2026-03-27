@@ -19,9 +19,9 @@ COPY --from=workspace nanobot-websocket-channel/ /app/nanobot-websocket-channel/
 COPY pyproject.toml uv.lock /app/nanobot/
 COPY . /app/nanobot/
 
-# Sync dependencies
+# Sync dependencies (reinstall mcp to get latest changes)
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --package nanobot
+    uv sync --package nanobot
 
 # ------------------------------------------------------------------------------
 # Runtime stage

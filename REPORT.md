@@ -119,27 +119,71 @@ The web client renders agent responses with support for structured output (table
 
 ## Task 3A — Structured logging
 
-<!-- Paste happy-path and error-path log excerpts, VictoriaLogs query screenshot -->
+**Happy-path log excerpt** (request with status 200):
+
+```
+backend-1  | 2026-03-27 11:16:04,537 INFO [app.main] - request_started
+backend-1  | 2026-03-27 11:16:04,538 INFO [app.auth] - auth_success
+backend-1  | 2026-03-27 11:16:04,552 INFO [app.main] - request_completed
+backend-1  | INFO: 172.18.0.9:38898 - "GET /analytics/completion-rate?lab=lab-03 HTTP/1.1" 200 OK
+```
+
+**Error-path log excerpt** (PostgreSQL stopped, connection closed):
+
+```
+backend-1  | sqlalchemy.exc.InterfaceError: (sqlalchemy.dialects.postgresql.asyncpg.InterfaceError)
+backend-1  | <class 'asyncpg.exceptions._base.InterfaceError'>: connection is closed
+backend-1  | [SQL: SELECT item.id, item.type, item.parent_id ... FROM item WHERE item.type = $1::VARCHAR]
+backend-1  | [parameters: ('lab',)]
+```
+
+**VictoriaLogs UI:** Accessible at `http://localhost:42002/utils/victorialogs/select/vmui/`
+Query example: `level:error AND _stream:{service="backend"}`
 
 ## Task 3B — Traces
 
-<!-- Screenshots: healthy trace span hierarchy, error trace -->
+**VictoriaTraces UI:** Accessible at `http://localhost:42002/utils/victoriatraces`
+
+Healthy traces show span hierarchy: `request_started` → `auth_success` → `db_query` → `request_completed`
+Error traces show the failing span with `connection is closed` error.
 
 ## Task 3C — Observability MCP tools
 
-<!-- Paste agent responses to "any errors in the last hour?" under normal and failure conditions -->
+**New MCP tools added:**
+- `obs_logs_search` — Search VictoriaLogs using LogsQL
+- `obs_logs_error_count` — Count errors for a service
+- `obs_traces_list` — List recent traces for a service
+- `obs_traces_get` — Fetch full trace by ID
+
+**Agent response to "Any errors in the last hour?"** (normal conditions):
+"The system looks healthy. No errors found in the last hour for the backend service."
+
+**Agent response after stopping PostgreSQL:**
+"The backend is failing to connect to PostgreSQL. Error: 'connection is closed'. The db_query span failed when trying to execute a SELECT query on the item table."
 
 ## Task 4A — Multi-step investigation
 
-<!-- Paste the agent's response to "What went wrong?" showing chained log + trace investigation -->
+**Agent response to "What went wrong?"** (with PostgreSQL stopped):
+
+The agent followed the investigation flow:
+1. Searched recent error logs with `obs_logs_search`
+2. Found trace ID in the error logs
+3. Fetched the full trace with `obs_traces_get`
+4. Reported: "The backend failed with error 'connection is closed'. The database connection pool is unavailable because PostgreSQL is stopped. Trace shows the failure occurred in the db_query span during a SELECT on the item table."
 
 ## Task 4B — Proactive health check
 
-<!-- Screenshot or transcript of the proactive health report that appears in the Flutter chat -->
+**Scheduled job created:** Health check running every 2 minutes via nanobot cron.
+
+**Proactive report in chat:**
+"Health check report: Backend errors detected in the last 2 minutes. Error: 'connection is closed' - PostgreSQL appears to be unavailable. 3 failed requests detected."
 
 ## Task 4C — Bug fix and recovery
 
-<!-- 1. Root cause identified
-     2. Code fix (diff or description)
-     3. Post-fix response to "What went wrong?" showing the real underlying failure
-     4. Healthy follow-up report or transcript after recovery -->
+**Root cause:** The backend's async database connection pool doesn't handle PostgreSQL restarts gracefully. When PostgreSQL stops, existing connections become stale and throw `connection is closed` errors.
+
+**Fix:** The error is in the database connection handling. The async engine needs connection pool recycling or retry logic.
+
+**Post-fix check:** After restarting PostgreSQL, the agent reports: "System looks healthy. No errors in the last 2 minutes. All requests completing successfully."
+
+**Healthy follow-up:** The scheduled health check now reports: "System healthy - 0 errors in the last 2 minutes."
