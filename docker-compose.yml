@@ -1,5 +1,8 @@
 services:
   backend:
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     build:
       context: ./backend
       additional_contexts:
@@ -46,6 +49,9 @@ services:
         condition: service_started
 
   postgres:
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     image: ${REGISTRY_PREFIX_DOCKER_HUB:-}postgres:18.3-alpine
     restart: unless-stopped
     networks:
@@ -70,6 +76,9 @@ services:
       retries: 5
 
   pgadmin:
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     image: ${REGISTRY_PREFIX_DOCKER_HUB:-}dpage/pgadmin4:latest
     restart: unless-stopped
     networks:
@@ -85,6 +94,9 @@ services:
         condition: service_healthy
 
   client-web-react:
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     build:
       context: client-web-react/
       args:
@@ -130,6 +142,9 @@ services:
   #     - client-web-flutter:/output
 
   caddy:
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     image: ${REGISTRY_PREFIX_DOCKER_HUB:-}caddy:2.11-alpine
     networks:
       - lms-network
@@ -161,6 +176,9 @@ services:
       # - client-web-flutter:/srv/flutter:ro
 
   qwen-code-api:
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     build:
       context: ./qwen-code-api
       args:
@@ -216,6 +234,9 @@ services:
   #     - nanobot
 
   victorialogs:
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     image: ${REGISTRY_PREFIX_DOCKER_HUB:-}victoriametrics/victoria-logs:latest
     restart: unless-stopped
     networks:
@@ -229,6 +250,9 @@ services:
       - -retentionPeriod=7d
 
   victoriatraces:
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     image: ${REGISTRY_PREFIX_DOCKER_HUB:-}victoriametrics/victoria-traces:latest
     restart: unless-stopped
     networks:
@@ -242,6 +266,9 @@ services:
       - -retentionPeriod=7d
 
   otel-collector:
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     image: ${REGISTRY_PREFIX_DOCKER_HUB:-}otel/opentelemetry-collector-contrib:latest
     restart: unless-stopped
     networks:
