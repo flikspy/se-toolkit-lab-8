@@ -5,17 +5,12 @@ WORKDIR /app
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-# Copy project files
-COPY pyproject.toml uv.lock ./
-COPY config.json ./config.json
-COPY workspace/ ./workspace/
+# Copy the entire workspace for context
+COPY . /workspace/
+WORKDIR /workspace/nanobot
 
-# Install dependencies
+# Sync dependencies (including MCP and webchat from workspace)
 RUN uv sync --frozen --no-dev
-
-# Add MCP package
-COPY ../mcp /mcp
-RUN uv add /mcp
 
 ENV PYTHONUNBUFFERED=1
 
