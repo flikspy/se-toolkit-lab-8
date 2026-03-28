@@ -12,16 +12,9 @@ logger = logging.getLogger(__name__)
 
 async def read_items(session: AsyncSession) -> list[ItemRecord]:
     """Read all items from the database."""
-    try:
-        logger.info("db_query", extra={"event": "db_query", "table": "item", "operation": "select"})
-        result = await session.exec(select(ItemRecord))
-        return list(result.all())
-    except Exception as exc:
-        logger.error(
-            "db_query",
-            extra={"event": "db_query", "table": "item", "operation": "select", "error": str(exc)},
-        )
-        raise
+    logger.info("db_query", extra={"event": "db_query", "table": "item", "operation": "select"})
+    result = await session.exec(select(ItemRecord))
+    return list(result.all())
 
 
 async def read_item(session: AsyncSession, item_id: int) -> ItemRecord | None:
