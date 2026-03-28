@@ -2,21 +2,15 @@ FROM python:3.14-slim
 
 WORKDIR /app
 
-# Install uv
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+# Copy the project
+COPY . .
 
-# Copy the entire workspace for context
-COPY . /workspace/
-WORKDIR /workspace/nanobot
+# Install all packages system-wide
+RUN pip install --upgrade pip && \
+    pip install "nanobot-ai @ https://github.com/HKUDS/nanobot/archive/e7d371ec1e6531b28898ec2c869ef338e8dd46ec.zip" && \
+    pip install -e ./mcp && \
+    pip install -e ./nanobot-websocket-channel/nanobot-webchat
 
-# Sync dependencies (including MCP and webchat from workspace)
-RUN uv sync --frozen --no-dev
+ENV PYTHONPATH="/app"
 
-ENV PYTHONUNBUFFERED=1
-
-# Gateway port
-EXPOSE 18790
-# Webchat port
-EXPOSE 8765
-
-CMD ["uv", "run", "nanobot", "gateway", "-c", "./config.json"]
+CMD ["python", "/app/nanobot/entrypoint.py"]
