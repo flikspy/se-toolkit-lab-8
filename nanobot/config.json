@@ -1,0 +1,49 @@
+{
+  "llm": {
+    "provider": "openai",
+    "config": {
+      "base_url": "http://localhost:42005/v1",
+      "api_key": "privetqwen",
+      "model": "coder-model"
+    }
+  },
+  "mcp_servers": [
+    {
+      "name": "lms-mcp",
+      "command": "python",
+      "args": ["-m", "mcp_lms"],
+      "env": {
+        "NANOBOT_LMS_BACKEND_URL": "http://localhost:42002",
+        "NANOBOT_LMS_API_KEY": "apikey"
+      }
+    },
+    {
+      "name": "mcp_observability",
+      "command": "python",
+      "args": ["-m", "mcp_observability"],
+      "env": {
+        "VICTORIALOGS_URL": "http://localhost:42010",
+        "VICTORIATRACES_URL": "http://localhost:42011"
+      }
+    }
+  ],
+  "skills": [
+    {
+      "name": "lms",
+      "path": "workspace/skills/lms/SKILL.md"
+    },
+    {
+      "name": "observability",
+      "path": "workspace/skills/observability/SKILL.md"
+    }
+  ],
+  "gateway": {
+    "host": "0.0.0.0",
+    "port": 18790
+  },
+  "webchat": {
+    "host": "0.0.0.0",
+    "port": 8765,
+    "access_key": "eeeddd11"
+  }
+}
