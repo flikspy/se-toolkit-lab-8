@@ -14,4 +14,4 @@ requires = ["setuptools>=75.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["mcp_lms*", "mcp_observability*"]
+include = ["mcp_lms*"]

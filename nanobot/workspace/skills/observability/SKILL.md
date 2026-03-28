@@ -1,85 +1,90 @@
 # Observability Skill
 
-You are an AI assistant with access to observability tools for monitoring system health and investigating failures.
+You have access to observability tools that let you see logs and traces from the LMS system.
 
 ## Available Tools
 
-You have the following observability tools:
+### Logs (VictoriaLogs)
+- **`logs_search`** — Search logs using LogsQL query
+  - `query`: LogsQL query string (e.g., `"service:backend"`, `"level:error"`, `"_stream:{service=\"backend\"} AND level:error"`)
+  - `limit`: Max entries to return (default 10, max 100)
 
-### Log Tools
-- **logs_search**: Search VictoriaLogs using LogsQL queries. Use for finding errors, debugging issues.
-- **logs_error_count**: Count error logs for a service in a time range. Use to check if there are recent errors.
+- **`logs_error_count`** — Count errors for a service
+  - `service`: Service name (e.g., `"backend"`)
+  - `minutes`: Time window in minutes (default 60)
 
-### Trace Tools
-- **traces_list**: List recent traces for a service from VictoriaTraces. Shows request flows and latencies.
-- **traces_get**: Fetch a specific trace by ID. Use to inspect detailed request flow after finding a trace ID in logs.
+### Traces (VictoriaTraces)
+- **`traces_list`** — List recent traces for a service
+  - `service`: Service name (e.g., `"Learning Management Service"`)
+  - `limit`: Max traces to return (default 5, max 20)
 
-### Cron Tools
-- **schedule_job**: Schedule a recurring job to run at a specified interval. Use for periodic health checks.
-- **list_jobs**: List all scheduled jobs and their status.
-- **cancel_job**: Cancel a scheduled job by its ID.
+- **`traces_get`** — Fetch full trace details by ID
+  - `trace_id`: The trace ID to fetch
 
-## How to Investigate Failures
+## When to Use
 
-When the user asks **"What went wrong?"** or **"Check system health"**, follow this investigation flow:
+### User asks "What went wrong?" or "Check system health"
+**Follow this investigation flow:**
 
-### Step 1: Search for Recent Errors
-Start by searching for error logs in the last hour:
-```
-Use logs_search with query: '_stream:{service="backend"} AND level:error'
-```
+1. **Check for recent errors** — Call `logs_error_count(service="backend", minutes=5)` to see if there are errors in the last 5 minutes
 
-### Step 2: Extract Trace ID
-Look at the error logs returned. If any log entry contains a `trace_id` or `traceId` field, extract it.
+2. **If errors exist (count > 0)**:
+   - Call `logs_search(query="level:error AND service:backend", limit=10)` to get error details
+   - Look for trace IDs in error messages (field: `trace_id`)
+   - If you find a trace ID, call `traces_get(trace_id="...")` to see the full failure context
+   - Analyze the span hierarchy to identify where the failure occurred
 
-### Step 3: Fetch the Trace
-If you found a trace ID, use `traces_get` with that trace ID to see the full request flow and understand where the failure occurred.
+3. **If no errors found**:
+   - Call `logs_search(query="service:backend", limit=5)` to see recent activity
+   - Check if the system is operating normally
 
-### Step 4: Summarize Findings
-Provide a concise summary that includes:
-- **What failed**: Describe the error in simple terms
-- **When it happened**: The timestamp from the logs
-- **Root cause**: Based on the trace, explain what went wrong (e.g., database connection failed, external API timeout)
-- **Impact**: How many requests were affected (from trace span count or error count)
+4. **Summarize findings** — Report:
+   - What failed (specific error message)
+   - Where it failed (which service, which operation)
+   - Why it failed (root cause from logs/traces)
+   - Impact (how many errors, over what time period)
 
-Do NOT dump raw JSON. Summarize the findings in a clear, actionable way.
+### User asks "Any errors in the last hour?"
+1. Call `logs_error_count(service="backend", minutes=60)`
+2. If count > 0, call `logs_search(query="level:error", limit=5)` for details
+3. Summarize findings concisely
 
-## How to Check for Recent Errors
+### User asks to investigate a specific failure
+1. Search logs for the time window: `logs_search(query="service:backend AND level:error", limit=20)`
+2. Look for trace IDs in error messages
+3. Fetch the trace: `traces_get(trace_id="...")`
+4. Analyze the span hierarchy to find where the failure occurred
+5. Report the root cause
 
-When the user asks **"Any errors in the last hour?"**:
+## Response Style
 
-1. Use `logs_error_count` with `service="backend"` and `time_range="1h"`
-2. If errors > 0, use `logs_search` to show a few recent errors
-3. Summarize: "Found X errors in the last hour. [Brief description of the most recent one]"
+- **Be concise** — summarize findings, don't dump raw JSON
+- **Mention specific error messages** — quote the actual exception text
+- **Identify the root cause** — e.g., "PostgreSQL connection refused", "database is locked"
+- **Include evidence** — reference log entries and trace spans that support your conclusion
+- **Use markdown formatting** — bold key findings, use code blocks for error messages
 
-## How to Schedule Health Checks
+## Examples
 
-When the user asks you to create a periodic health check:
+**Query:** "What went wrong?"
+**Response:** 
+"I investigated the recent failure. Here's what I found:
 
-1. Use `schedule_job` with:
-   - `interval_minutes`: The interval the user requested (e.g., 2, 15)
-   - `task`: A description like "Check backend errors in the last {interval} minutes, inspect traces if needed, and post a summary"
+**Logs:** Found 3 errors in the backend service in the last 5 minutes. Error message: `(sqlalchemy.dialects.postgresql.asyncpg.InterfaceError) connection is closed`
 
-2. Confirm to the user that the job was scheduled with its ID
+**Traces:** Trace `abc123...` shows the failure occurred at the `db_query` span. The request started successfully, authentication passed, but the database query failed because PostgreSQL was unavailable.
 
-## Example Interactions
+**Root cause:** PostgreSQL database is stopped or unreachable. The backend cannot establish a database connection."
 
-**User**: "What went wrong?"
-**You**: 
-1. Call `logs_search` with query for backend errors
-2. If logs contain a trace_id, call `traces_get` with that ID
-3. Summarize: "I found an error at [time]. The backend failed to [action] because [root cause]. The trace shows [brief trace summary]."
+**Query:** "Any errors in the last hour?"
+**Response:** "No errors detected in the last hour. The backend service has been running cleanly with **0 errors** in the past 60 minutes."
 
-**User**: "Any errors in the last hour?"
-**You**: 
-1. Call `logs_error_count` with service="backend", time_range="1h"
-2. If count > 0: "Found {count} errors. Most recent: [summary]"
-3. If count = 0: "No errors found in the last hour. System looks healthy."
+**Query:** "Check system health"
+**Response:** 
+"System health check:
 
-**User**: "Create a health check that runs every 15 minutes"
-**You**: 
-1. Call `schedule_job` with interval_minutes=15 and appropriate task description
-2. Confirm: "Scheduled job {job_id} to run every 15 minutes. It will check for backend errors and post summaries here."
+✅ **Backend:** Running, no errors in last 5 minutes
+✅ **Database:** PostgreSQL reachable
+✅ **Recent activity:** All requests completing successfully
 
-**User**: "List scheduled jobs"
-**You**: Call `list_jobs` and format the results clearly.
+System looks healthy."
