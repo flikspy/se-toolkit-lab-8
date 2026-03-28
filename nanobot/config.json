@@ -1,49 +1,71 @@
 {
-  "llm": {
-    "provider": "openai",
-    "config": {
-      "base_url": "http://localhost:42005/v1",
-      "api_key": "privetqwen",
-      "model": "coder-model"
+  "agents": {
+    "defaults": {
+      "workspace": "./workspace",
+      "model": "coder-model",
+      "provider": "custom",
+      "maxTokens": 8192,
+      "contextWindowTokens": 65536,
+      "temperature": 0.1,
+      "maxToolIterations": 40,
+      "reasoningEffort": null
     }
   },
-  "mcp_servers": [
-    {
-      "name": "lms-mcp",
-      "command": "python",
-      "args": ["-m", "mcp_lms"],
-      "env": {
-        "NANOBOT_LMS_BACKEND_URL": "http://localhost:42002",
-        "NANOBOT_LMS_API_KEY": "apikey"
-      }
-    },
-    {
-      "name": "mcp_observability",
-      "command": "python",
-      "args": ["-m", "mcp_observability"],
-      "env": {
-        "VICTORIALOGS_URL": "http://localhost:42010",
-        "VICTORIATRACES_URL": "http://localhost:42011"
-      }
+  "providers": {
+    "custom": {
+      "apiKey": "privetqwen",
+      "apiBase": "http://localhost:42005/v1",
+      "extraHeaders": null
     }
-  ],
-  "skills": [
-    {
-      "name": "lms",
-      "path": "workspace/skills/lms/SKILL.md"
-    },
-    {
-      "name": "observability",
-      "path": "workspace/skills/observability/SKILL.md"
-    }
-  ],
-  "gateway": {
-    "host": "0.0.0.0",
-    "port": 18790
   },
-  "webchat": {
-    "host": "0.0.0.0",
-    "port": 8765,
-    "access_key": "eeeddd11"
+  "channels": {
+    "sendProgress": true,
+    "sendToolHints": false,
+    "telegram": {
+      "enabled": false,
+      "token": "",
+      "allowFrom": [],
+      "proxy": null,
+      "replyToMessage": false,
+      "groupPolicy": "mention"
+    },
+    "webchat": {
+      "enabled": true,
+      "allow_from": ["*"]
+    }
+  },
+  "tools": {
+    "web": {
+      "proxy": null,
+      "search": {
+        "provider": "brave",
+        "apiKey": "",
+        "baseUrl": "",
+        "maxResults": 5
+      }
+    },
+    "exec": {
+      "timeout": 60,
+      "pathAppend": ""
+    },
+    "restrictToWorkspace": false,
+    "mcpServers": {
+      "lms": {
+        "command": "/app/.venv/bin/python",
+        "args": ["-m", "mcp_lms"],
+        "env": {
+          "NANOBOT_LMS_BACKEND_URL": "http://backend:8000",
+          "NANOBOT_LMS_API_KEY": "apikey"
+        }
+      },
+      "observability": {
+        "command": "/app/.venv/bin/python",
+        "args": ["-m", "mcp_observability"],
+        "env": {
+          "VICTORIALOGS_URL": "http://victorialogs:9428",
+          "VICTORIATRACES_URL": "http://victoriatraces:10428"
+        }
+      }
+    }
   }
 }
