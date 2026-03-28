@@ -15,6 +15,31 @@ class HealthResult(BaseModel):
     error: str = ""
 
 
+class LogEntry(BaseModel):
+    timestamp: str = ""
+    level: str = ""
+    service: str = ""
+    event: str = ""
+    message: str = ""
+    trace_id: str = ""
+
+
+class TraceSpan(BaseModel):
+    trace_id: str = ""
+    span_id: str = ""
+    operation_name: str = ""
+    service_name: str = ""
+    start_time: int = 0
+    duration: int = 0
+    tags: list[dict] = []
+    logs: list[dict] = []
+
+
+class Trace(BaseModel):
+    trace_id: str = ""
+    spans: list[TraceSpan] = []
+
+
 class Item(BaseModel):
     id: int | None = None
     type: str = "step"
@@ -184,3 +209,97 @@ def format_scores(lab: str, rates: list[PassRate]) -> str:
         f"\u2022 {r.task}: {r.avg_score:.1f}% ({r.attempts} attempts)" for r in rates
     )
     return text
+
+
+# ---------------------------------------------------------------------------
+# VictoriaLogs client
+# ---------------------------------------------------------------------------
+
+
+class VictoriaLogsClient:
+    """Client for VictoriaLogs HTTP API."""
+
+    def __init__(self, base_url: str):
+        self.base_url = base_url.rstrip("/")
+
+    def _client(self) -> httpx.AsyncClient:
+        return httpx.AsyncClient(timeout=10.0)
+
+    async def search(
+        self, query: str, limit: int = 50, start_time: str | None = None
+    ) -> list[dict]:
+        """Search logs using LogsQL query."""
+        async with self._client() as c:
+            params = {"query": query, "limit": limit}
+            if start_time:
+                params["start"] = start_time
+            r = await c.get(f"{self.base_url}/select/logsql/query", params=params)
+            r.raise_for_status()
+            return r.json()
+
+    async def error_count(
+        self, service: str = "backend", time_range: str = "1h"
+    ) -> int:
+        """Count errors for a service in a time range."""
+        query = f'_stream:{{service="{service}"}} AND (level:error OR level:ERROR)'
+        async with self._client() as c:
+            params = {"query": query, "start": f"now-{time_range}"}
+            r = await c.get(f"{self.base_url}/select/logsql/query", params=params)
+            r.raise_for_status()
+            result = r.json()
+            if isinstance(result, list):
+                return len(result)
+            return 0
+
+
+# ---------------------------------------------------------------------------
+# VictoriaTraces client (Jaeger-compatible API)
+# ---------------------------------------------------------------------------
+
+
+class VictoriaTracesClient:
+    """Client for VictoriaTraces HTTP API (Jaeger-compatible)."""
+
+    def __init__(self, base_url: str):
+        self.base_url = base_url.rstrip("/")
+
+    def _client(self) -> httpx.AsyncClient:
+        return httpx.AsyncClient(timeout=10.0)
+
+    async def list_traces(
+        self, service: str = "backend", limit: int = 20
+    ) -> list[dict]:
+        """List recent traces for a service."""
+        async with self._client() as c:
+            params = {"service": service, "limit": limit}
+            r = await c.get(f"{self.base_url}/jaeger/api/traces", params=params)
+            r.raise_for_status()
+            data = r.json()
+            return data.get("data", [])
+
+    async def get_trace(self, trace_id: str) -> Trace | None:
+        """Get a specific trace by ID."""
+        async with self._client() as c:
+            r = await c.get(f"{self.base_url}/jaeger/api/traces/{trace_id}")
+            if r.status_code == 404:
+                return None
+            r.raise_for_status()
+            data = r.json()
+            trace_data = data.get("data", [])
+            if not trace_data:
+                return None
+            spans_data = trace_data[0].get("spans", [])
+            spans = [
+                TraceSpan(
+                    trace_id=s.get("traceID", ""),
+                    span_id=s.get("spanID", ""),
+                    operation_name=s.get("operationName", ""),
+                    service_name=s.get("process", {}).get("serviceName", ""),
+                    start_time=s.get("startTime", 0),
+                    duration=s.get("duration", 0),
+                    tags=s.get("tags", []),
+                    logs=s.get("logs", []),
+                )
+                for s in spans_data
+            ]
+            return Trace(trace_id=trace_id, spans=spans)
