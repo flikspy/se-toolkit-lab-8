@@ -6,11 +6,7 @@ FROM ${REGISTRY_PREFIX_DOCKER_HUB}astral/uv:python3.14-bookworm-slim AS builder
 
 ENV UV_COMPILE_BYTECODE=1
 ENV UV_LINK_MODE=copy
-
-# Omit development dependencies
 ENV UV_NO_DEV=1
-
-# Disable Python downloads
 ENV UV_PYTHON_DOWNLOADS=0
 
 WORKDIR /app
@@ -21,21 +17,9 @@ COPY --from=workspace nanobot/ /app/nanobot/
 COPY --from=workspace mcp/ /app/mcp/
 COPY --from=workspace nanobot-websocket-channel/ /app/nanobot-websocket-channel/
 
-# Sync nanobot dependencies
+# Sync all dependencies
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-install-workspace --package nanobot-ai
-
-# Sync MCP dependencies
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-install-workspace --package lms-mcp
-
-# Sync webchat plugin
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-install-workspace --package nanobot-webchat
-
-# Sync again with all local packages
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --package nanobot-ai --package lms-mcp --package nanobot-webchat
+    uv sync --frozen
 
 # ---
 # Stage 2: Final image
